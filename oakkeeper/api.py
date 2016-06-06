@@ -18,12 +18,14 @@ def get_repos_page_count(base_url, token):
     except KeyError:
         return 0
 
+
 def get_repo(base_url, token, repo):
     auth = HTTPBasicAuth('token', token)
     url = base_url + '/repos/{repo}'.format(repo=repo)
     r = requests.get(url, auth=auth)
     r.raise_for_status()
     return r.json()
+
 
 def get_repos(base_url, token, page=0):
     url = base_url + '/user/repos?visibility=public&page={page}'.format(page=page)
@@ -32,6 +34,7 @@ def get_repos(base_url, token, page=0):
     r.raise_for_status()
     return r.json()
 
+
 def get_branch_data(base_url, token, repo, branch):
     url = base_url + '/repos/{repo}/branches/{branch}'.format(repo=repo, branch=branch)
     headers = {'Accept': 'application/vnd.github.loki-preview+json'}
@@ -39,6 +42,7 @@ def get_branch_data(base_url, token, repo, branch):
     r = requests.get(url, headers=headers, auth=auth)
     r.raise_for_status()
     return r.json()
+
 
 def protect_branch(base_url, token, repo, branch, required_contexts):
     protection_payload = {
@@ -59,6 +63,7 @@ def protect_branch(base_url, token, repo, branch, required_contexts):
         auth=auth,
         data=json.dumps(protection_payload))
     r.raise_for_status()
+
 
 def ensure_branch_protection(base_url, token, repo, branch='master'):
     branch_data = get_branch_data(base_url, token, repo, branch)

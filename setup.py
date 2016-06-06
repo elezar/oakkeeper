@@ -7,7 +7,7 @@ config = {
     'description': 'CLI to set branch protection of a Github respository in a Zalando-compliant way',
     'author': 'Nikolaus Piccolotto',
     'url': 'https://github.com/zalando-incubator/oakkeeper',
-    'download_url': 'https://github.com/zalando-incubator/oakkeeper/tarball/0.2',
+    'download_url': 'https://github.com/zalando-incubator/oakkeeper/tarball/0.3',
     'author_email': 'nikolaus.piccolotto@zalando.de',
     'version': '0.2',
     'setup_requires': [
