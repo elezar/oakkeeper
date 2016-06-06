@@ -9,7 +9,7 @@ config = {
     'url': 'https://github.com/zalando-incubator/oakkeeper',
     'download_url': 'https://github.com/zalando-incubator/oakkeeper/tarball/0.3',
     'author_email': 'nikolaus.piccolotto@zalando.de',
-    'version': '0.2',
+    'version': '0.3',
     'setup_requires': [
         'nose'
     ],
