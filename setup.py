@@ -13,7 +13,10 @@ config = {
     'setup_requires': [
         'nose'
     ],
-    'install_packages': [
+    'tests_require': [
+        'nose'
+    ],
+    'install_requires': [
         'requests',
         'click',
         'clickclick'
