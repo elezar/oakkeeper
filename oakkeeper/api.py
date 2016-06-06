@@ -18,6 +18,12 @@ def get_repos_page_count(base_url, token):
     except KeyError:
         return 0
 
+def get_repo(base_url, token, repo):
+    auth = HTTPBasicAuth('token', token)
+    url = base_url + '/repos/{repo}'.format(repo=repo)
+    r = requests.get(url, auth=auth)
+    r.raise_for_status()
+    return r.json()
 
 def get_repos(base_url, token, page=0):
     url = base_url + '/user/repos?visibility=public&page={page}'.format(page=page)
@@ -26,26 +32,37 @@ def get_repos(base_url, token, page=0):
     r.raise_for_status()
     return r.json()
 
-
-def protect_branch(base_url, token, repo, branch='master'):
+def get_branch_data(base_url, token, repo, branch):
     url = base_url + '/repos/{repo}/branches/{branch}'.format(repo=repo, branch=branch)
     headers = {'Accept': 'application/vnd.github.loki-preview+json'}
     auth = HTTPBasicAuth('token', token)
-    contexts = requests.get(url, headers=headers, auth=auth).json()['protection']['required_status_checks']['contexts']
-    if 'zappr' not in contexts:
-        contexts.append('zappr')
-        protection_payload = {
-            'protection': {
-                'enabled': True,
-                'required_status_checks': {
-                    'enforcement_level': 'everyone',
-                    'contexts': contexts
-                }
+    r = requests.get(url, headers=headers, auth=auth)
+    r.raise_for_status()
+    return r.json()
+
+def protect_branch(base_url, token, repo, branch, required_contexts):
+    protection_payload = {
+        'protection': {
+            'enabled': True,
+            'required_status_checks': {
+                'enforcement_level': 'everyone',
+                'contexts': required_contexts
             }
         }
-        r = requests.patch(
-            url,
-            headers=headers,
-            auth=auth,
-            data=json.dumps(protection_payload))
-        r.raise_for_status()
+    }
+    url = base_url + '/repos/{repo}/branches/{branch}'.format(repo=repo, branch=branch)
+    headers = {'Accept': 'application/vnd.github.loki-preview+json'}
+    auth = HTTPBasicAuth('token', token)
+    r = requests.patch(
+        url,
+        headers=headers,
+        auth=auth,
+        data=json.dumps(protection_payload))
+    r.raise_for_status()
+
+def ensure_branch_protection(base_url, token, repo, branch='master'):
+    branch_data = get_branch_data(base_url, token, repo, branch)
+    contexts = branch_data['protection']['required_status_checks']['contexts']
+    if 'zappr' not in contexts:
+        contexts.append('zappr')
+        protect_branch(base_url, token, repo, branch, contexts)
