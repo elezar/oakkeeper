@@ -6,8 +6,8 @@ except ImportError:
 config = {
     'description': 'CLI to set branch protection of a Github respository in a Zalando-compliant way',
     'author': 'Nikolaus Piccolotto',
-    'url': 'https://github.bus.zalan.do/torch/oakkeeper',
-    'download_url': 'Where to download it.',
+    'url': 'https://github.com/zalando-incubator/oakkeeper',
+    'download_url': 'https://github.com/zalando-incubator/oakkeeper/tarball/0.1',
     'author_email': 'nikolaus.piccolotto@zalando.de',
     'version': '0.1',
     'setup_requires': [
