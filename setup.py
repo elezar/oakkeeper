@@ -9,7 +9,7 @@ config = {
     'url': 'https://github.com/zalando-incubator/oakkeeper',
     'download_url': 'https://github.com/zalando-incubator/oakkeeper/tarball/0.1',
     'author_email': 'nikolaus.piccolotto@zalando.de',
-    'version': '0.1',
+    'version': '0.2',
     'setup_requires': [
         'nose'
     ],
@@ -25,7 +25,8 @@ config = {
         'oakkeeper'
     ],
     'scripts': [],
-    'name': 'oakkeeper'
+    'name': 'oakkeeper',
+    'entry_points': {'console_scripts': ['oakkeeper = oakkeeper.cli:oakkeeper']}
 }
 
 setup(**config)

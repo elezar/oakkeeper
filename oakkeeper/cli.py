@@ -1,23 +1,47 @@
-from clickclick import Action
 import click
+import oakkeeper
 import oakkeeper.api as api
+from clickclick import Action
 
 
-@click.command()
+def print_version(ctx, param, value):
+    if not value or ctx.resilient_parsing:
+        return
+    click.echo('Oakkeper {}'.format(oakkeeper.__version__))
+    ctx.exit()
+
+
+CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+
+
+@click.command(context_settings=CONTEXT_SETTINGS)
 @click.argument('repositories',
                 nargs=-1)
 @click.option('--base-url',
+              '-U',
               envvar='OK_BASE_URL',
               prompt='Github API Base URL',
-              default='https://api.github.com')
+              default='https://api.github.com',
+              help='The Github API Base URL. For GHE use <GHE URL>/api/v3.')
 @click.option('--token',
+              '-T',
               envvar='OK_TOKEN',
               prompt='Your personal access token',
-              hide_input=True)
-@click.option('-y',
+              hide_input=True,
+              help='Your personal access token to use, must have "repo" scope.')
+@click.option('--yes',
+              '-Y',
               envvar='OK_Y',
               is_flag=True,
-              default=False)
+              default=False,
+              help='Do not prompt for every repository, protect branches everywhere.')
+@click.option('--version',
+              '-V',
+              is_flag=True,
+              callback=print_version,
+              expose_value=False,
+              is_eager=True,
+              help='Print the current version number and exit.')
 def oakkeeper(repositories, base_url, token, y):
     if len(repositories) > 0:
         # enable only for these repos
