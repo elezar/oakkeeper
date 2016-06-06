@@ -4,7 +4,7 @@ except ImportError:
     from distutils.core import setup
 
 config = {
-    'description': 'CLI to configure Zappr in a compliant way',
+    'description': 'CLI to set branch protection of a Github respository in a Zalando-compliant way',
     'author': 'Nikolaus Piccolotto',
     'url': 'https://github.bus.zalan.do/torch/oakkeeper',
     'download_url': 'Where to download it.',

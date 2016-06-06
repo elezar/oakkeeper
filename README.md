@@ -1,6 +1,6 @@
 # Oakkeeper
 
-Swears to protect your branches.
+CLI to set branch protection of a Github respository in a Zalando-compliant way.
 
 ![Oakkeeper](oathkeeper.jpg)
 
@@ -22,7 +22,11 @@ Alternatively you can provide the repositories as a space-separated list like so
 
     oakkeeper zalando-stups/yourturn zalando-incubator/fahrschein zalando/zmon
 
-* Access token: `--token` or environment variable `OK_TOKEN`
-* Github Url: `--base-url` or environment variable `OK_BASE_URL`
+## Options
+* Access token: `--token` or environment variable `OK_TOKEN`. Needs `repo` scope.
+* Github Url: `--base-url` or environment variable `OK_BASE_URL`. For Github Enterprise this is `<github enterprise url>/api/v3`.
 * "Yes to all": `-y` or environment variable `OK_Y`
 
+## License
+
+Apache 2, see [LICENSE](LICENSE.txt).
