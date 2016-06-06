@@ -7,7 +7,7 @@ from clickclick import Action
 def print_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
-    click.echo('Oakkeper {}'.format(oakkeeper.__version__))
+    click.echo('Oakkeeper {}'.format(oakkeeper.__version__))
     ctx.exit()
 
 
@@ -42,7 +42,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
               expose_value=False,
               is_eager=True,
               help='Print the current version number and exit.')
-def oakkeeper(repositories, base_url, token, y):
+def main(repositories, base_url, token, yes):
     if len(repositories) > 0:
         # enable only for these repos
         for repo in repositories:
@@ -61,8 +61,8 @@ def oakkeeper(repositories, base_url, token, y):
             for repo in repositories:
                 repo_name = repo['full_name']
                 default_branch = repo['default_branch']
-                protect = y
-                if not y:
+                protect = yes
+                if not yes:
                     protect = click.confirm('Protect {repo}?'.format(repo=repo_name))
                 if protect:
                     try:

@@ -1,7 +1,7 @@
+import re
+import json
 import requests
 from requests.auth import HTTPBasicAuth
-import json
-import re
 
 PAGE_REGEX = re.compile(r'page=([0-9]+)')
 

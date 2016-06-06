@@ -1,7 +1,7 @@
 from nose.tools import *
 from unittest.mock import MagicMock
 from click.testing import CliRunner
-from oakkeeper.cli import oakkeeper
+from oakkeeper.cli import main
 import oakkeeper.api as api
 
 GITHUB_API = 'https://github.api'
@@ -36,7 +36,7 @@ def test_nothing_to_do():
     api.get_branch_data = MagicMock(return_value=branch_data)
     api.protect_branch = MagicMock()
     runner = CliRunner()
-    result = runner.invoke(oakkeeper, [
+    result = runner.invoke(main, [
         'foo/bar',
         '--base-url',
         GITHUB_API,
@@ -60,7 +60,7 @@ def test_happy_case():
     api.get_branch_data = MagicMock(return_value=branch_data)
     api.protect_branch = MagicMock(return_value=None)
     runner = CliRunner()
-    result = runner.invoke(oakkeeper, [
+    result = runner.invoke(main, [
         'foo/bar',
         '--base-url',
         GITHUB_API,
@@ -77,7 +77,7 @@ def test_no_access():
     runner = CliRunner()
     api.get_repo = MagicMock(side_effect=Exception)
     api.protect_branch = MagicMock(return_value=None)
-    result = runner.invoke(oakkeeper, [
+    result = runner.invoke(main, [
         'foo/bar',
         '--base-url',
         GITHUB_API,
