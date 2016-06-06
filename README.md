@@ -2,7 +2,7 @@
 
 Swears to protect your branches.
 
-![Oakkeeper](http://images6.fanpop.com/image/photos/37000000/Season-4-Episode-4-Oathkeeper-game-of-thrones-37004766-1200-675.jpg)
+![Oakkeeper](oathkeeper.jpg)
 
 It makes sure that for any repository:
 
