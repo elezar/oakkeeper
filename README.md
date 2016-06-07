@@ -2,6 +2,9 @@
 
 CLI to set branch protection of a Github respository in a Zalando-compliant way.
 
+[![](https://travis-ci.org/zalando-incubator/oakkeeper.svg?branch=master)](https://travis-ci.org/zalando-incubator/oakkeeper)
+[![Coverage Status](https://coveralls.io/repos/github/zalando-incubator/oakkeeper/badge.svg?branch=master)](https://coveralls.io/github/zalando-incubator/oakkeeper?branch=master)
+
 ![Oakkeeper](oathkeeper.jpg)
 
 It makes sure that for any repository:
@@ -23,9 +26,15 @@ Alternatively you can provide the repositories as a space-separated list like so
     oakkeeper zalando-stups/yourturn zalando-incubator/fahrschein zalando/zmon
 
 ## Options
+
 * Access token: `--token` or environment variable `OK_TOKEN`. Needs `repo` scope.
 * Github Url: `--base-url` or environment variable `OK_BASE_URL`. For Github Enterprise this is `<github enterprise url>/api/v3`.
-* "Yes to all": `-y` or environment variable `OK_Y`
+* "Yes to all": `--yes` or environment variable `OK_YES`
+
+You can also directly upload a local `.zappr.yaml` to every repository:
+
+* Path to `.zappr.yaml`: `--zappr-path` or `OK_ZAPPR_PATH`
+* Upload type: `--zappr-upload-type` or `OK_ZAPPR_UPLOAD_TYPE`. Might be `commit` (commit to default branch) or `pr` (open pull request).
 
 ## License
 

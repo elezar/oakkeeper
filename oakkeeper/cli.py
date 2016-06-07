@@ -31,7 +31,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
               help='Your personal access token to use, must have "repo" scope.')
 @click.option('--yes',
               '-Y',
-              envvar='OK_Y',
+              envvar='OK_YES',
               is_flag=True,
               default=False,
               help='Do not prompt for every repository, protect branches everywhere.')
