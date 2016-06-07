@@ -21,9 +21,9 @@ It makes sure that for any repository:
 
 If you just type `oakkeeper`, it will prompt for the Github API Base URL (defaults to Github.com) and the access token to use. **Be aware that the token needs `repo` scope!** Afterwards it will read all repositories you have access to and asks to enable branch protection.
 
-Alternatively you can provide the repositories as a space-separated list like so:
+Alternatively you can provide the repository patterns as a space-separated list like so:
 
-    oakkeeper zalando-stups/yourturn zalando-incubator/fahrschein zalando/zmon
+    oakkeeper zalando-stups/yourturn zalando/.*
 
 ## Options
 
