@@ -5,6 +5,6 @@ python:
 install:
   - pip install nose coveralls click clickclick requests
 script:
-  - nosetests
+  - nosetests --with-coverage --cover-package=oakkeeper
 after_success:
   - coveralls
