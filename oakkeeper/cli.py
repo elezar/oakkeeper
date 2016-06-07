@@ -60,42 +60,38 @@ def main(repositories, base_url, token, yes, zappr_path, zappr_upload_type):
             zappr_config = zappr_config_file.read()
     if len(repositories) > 0:
         # enable only for these repos
-        for repo in repositories:
-            try:
-                with Action('Protecting branches for {repo}'.format(repo=repo)):
-                    repo_data = api.get_repo(base_url=base_url, token=token, repo=repo)
-                    api.ensure_branch_protection(base_url=base_url, token=token, repo=repo,
-                                                 branch=repo_data['default_branch'])
-                if zappr_config is not None:
-                    with Action('Uploading .zappr.yaml for {repo}'.format(repo=repo)):
-                        api.upload_file(base_url=base_url, token=token, repo=repo,
-                                        default_branch=repo_data['default_branch'], file_content=zappr_config,
-                                        upload_type=zappr_upload_type)
-            except Exception as e:
-                # handled already by Action
-                pass
+        for repo_name in repositories:
+            protect_repo(base_url=base_url, token=token, repo_name=repo_name, zappr_config=zappr_config,
+                         zappr_upload_type=zappr_upload_type)
     else:
         page = 0
         page_total = api.get_repos_page_count(base_url, token)
         while page <= page_total:
             repositories = api.get_repos(base_url, token, page)
-            for repo in repositories:
-                repo_name = repo['full_name']
-                default_branch = repo['default_branch']
+            for repo_data in repositories:
                 protect = yes
                 if not yes:
-                    protect = click.confirm('Protect {repo}?'.format(repo=repo_name))
+                    protect = click.confirm('Protect {repo}?'.format(repo=repo_data['full_name']))
                 if protect:
-                    try:
-                        with Action('Protecting branches for {repo}'.format(repo=repo_name)):
-                            api.ensure_branch_protection(base_url=base_url, token=token, repo=repo,
-                                                         branch=default_branch)
-                        if zappr_config is not None:
-                            with Action('Uploading .zappr.yaml for {repo}'.format(repo=repo)):
-                                api.upload_file(base_url=base_url, token=token, repo=repo,
-                                                default_branch=default_branch, file_content=zappr_config,
-                                                upload_type=zappr_upload_type)
-                    except Exception as e:
-                        # handled already by Action
-                        pass
+                    protect_repo(base_url=base_url, token=token, repo_data=repo_data,
+                                 zappr_config=zappr_config, zappr_upload_type=zappr_upload_type)
             page += 1
+
+
+def protect_repo(base_url, token, repo_name, zappr_config, zappr_upload_type, repo_data=None):
+    if not repo_data:
+        repo_data = api.get_repo(base_url=base_url, token=token, repo=repo_name)
+    repo_name = repo_data['full_name']
+    default_branch = repo_data['default_branch']
+    try:
+        if zappr_config is not None:
+            with Action('Uploading .zappr.yaml for {repo}'.format(repo=repo_name)):
+                api.upload_file(base_url=base_url, token=token, repo=repo_name,
+                                default_branch=default_branch, file_content=zappr_config,
+                                upload_type=zappr_upload_type)
+        with Action('Protecting branches for {repo}'.format(repo=repo_name)):
+            api.ensure_branch_protection(base_url=base_url, token=token, repo=repo_name,
+                                         branch=default_branch)
+    except Exception as e:
+        # handled already by Action
+        pass
