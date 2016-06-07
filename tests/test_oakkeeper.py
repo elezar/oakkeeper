@@ -1,4 +1,4 @@
-from nose.tools import *
+from nose.tools import with_setup
 from unittest.mock import MagicMock
 from click.testing import CliRunner
 from oakkeeper.cli import main
@@ -7,19 +7,23 @@ import oakkeeper.api as api
 GITHUB_API = 'https://github.api'
 TOKEN = '123'
 REPO_DATA = {
-    'default_branch': 'release'
+    'default_branch': 'release',
+    'full_name': 'foo/bar'
 }
 
+
 def setup():
-    api.get_repo = MagicMock(return_value=REPO_DATA)
+    api.get_repos_page_count = MagicMock(return_value=1)
+    api.get_repos = MagicMock(return_value=[REPO_DATA])
 
 
 def teardown():
     try:
-        api.get_repo.reset_mock()
+        api.get_repos.reset_mock()
         api.protect_branch.reset_mock()
         api.ensure_branch_protection.reset_mock()
         api.get_branch_data.reset_mock()
+        api.get_repos_page_count.reset_mock()
     except:
         pass
 
@@ -65,26 +69,9 @@ def test_happy_case():
         '--base-url',
         GITHUB_API,
         '--token',
-        TOKEN
+        TOKEN,
+        '--yes'
     ])
     assert 0 == result.exit_code
     api.protect_branch.assert_called_with(GITHUB_API, TOKEN, 'foo/bar', 'release', ['zappr'])
     api.get_branch_data.assert_called_with(GITHUB_API, TOKEN, 'foo/bar', 'release')
-
-
-@with_setup(setup, teardown)
-def test_no_access():
-    runner = CliRunner()
-    api.get_repo = MagicMock(side_effect=Exception)
-    api.protect_branch = MagicMock(return_value=None)
-    result = runner.invoke(main, [
-        'foo/bar',
-        '--base-url',
-        GITHUB_API,
-        '--token',
-        TOKEN
-    ])
-    print(result.output)
-    assert 0 == result.exit_code
-    assert 'EXCEPTION OCCURRED' in result.output
-    api.protect_branch.assert_not_called()
