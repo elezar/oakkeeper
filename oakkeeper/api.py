@@ -1,5 +1,6 @@
 import re
 import json
+import base64
 import requests
 from requests.auth import HTTPBasicAuth
 
@@ -71,3 +72,74 @@ def ensure_branch_protection(base_url, token, repo, branch='master'):
     if 'zappr' not in contexts:
         contexts.append('zappr')
         protect_branch(base_url, token, repo, branch, contexts)
+
+
+def get_commits(base_url, token, repo):
+    url = base_url + '/repos/{repo}/commits'.format(repo=repo)
+    auth = HTTPBasicAuth('token', token)
+    r = requests.get(url, auth=auth)
+    r.raise_for_status()
+    return r.json()
+
+
+def create_branch(base_url, token, repo, branch_name, from_sha):
+    url = base_url + '/repos/{repo}/git/refs'.format(repo=repo)
+    auth = HTTPBasicAuth('token', token)
+    payload = {
+        'ref': 'refs/heads/{name}'.format(name=branch_name),
+        'sha': from_sha
+    }
+    r = requests.post(url, data=json.dumps(payload), auth=auth)
+    r.raise_for_status()
+    return r.json()
+
+
+def create_pr(base_url, token, repo, base, head, title='Add .zappr.yaml', body=''):
+    url = base_url + '/repos/{repo}/pulls'.format(repo=repo)
+    auth = HTTPBasicAuth('token', token)
+    payload = {
+        'title': title,
+        'head': head,
+        'base': base,
+        'content': body
+    }
+    r = requests.post(url, auth=auth, data=json.dumps(payload))
+    r.raise_for_status()
+    return None
+
+
+def commit_file(base_url, token, repo, branch_name, file_name, file_content):
+    url = base_url + '/repos/{repo}/contents/{file_name}'.format(repo=repo, file_name=file_name)
+    auth = HTTPBasicAuth('token', token)
+    read = requests.get(url + '?ref={branch}'.format(branch=branch_name), auth=auth)
+    sha = read.json()['sha'] if read.ok else None
+    payload = {
+        'message': 'Add .zappr.yaml',
+        'content': base64.b64encode(file_content.encode('UTF-8')).decode('ascii'),
+        'branch': branch_name
+    }
+    if sha:
+        payload['sha'] = sha
+    r = requests.put(
+        url,
+        auth=auth,
+        data=json.dumps(payload)
+    )
+    r.raise_for_status()
+    return r.json()
+
+
+def upload_file(base_url, token, repo, default_branch, file_content, upload_type, file_name='.zappr.yaml',
+                branch_name='add-zappr-yaml'):
+    if upload_type == 'commit':
+        commit_file(base_url=base_url, token=token, repo=repo, branch_name=default_branch, file_name=file_name,
+                    file_content=file_content)
+    elif upload_type == 'pr':
+        commits = get_commits(base_url=base_url, token=token, repo=repo)
+        head = commits[0]['sha']
+        create_branch(base_url=base_url, token=token, repo=repo, branch_name=branch_name, from_sha=head)
+        commit_resp = commit_file(base_url=base_url, token=token, repo=repo, branch_name=branch_name,
+                                  file_name=file_name, file_content=file_content)
+        create_pr(base_url=base_url, token=token, repo=repo, base=default_branch, head=commit_resp['commit']['sha'])
+    else:
+        return None
