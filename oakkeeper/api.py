@@ -15,7 +15,7 @@ def get_repos_page_count(base_url, token):
     # '<https://api.github.com/user/repos?page=2>; rel="next", <https://api.github.com/user/repos?page=11>; rel="last"'
     try:
         link_header = r.headers['Link']
-        return int(PAGE_REGEX.split(link_header)[3]) - 1
+        return int(PAGE_REGEX.split(link_header)[3])
     except KeyError:
         return 0
 
