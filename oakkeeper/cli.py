@@ -37,16 +37,24 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
               default=False,
               help='Do not prompt for every repository, protect branches everywhere.')
 @click.option('--zappr-path',
-              '-P',
+              '-Z',
               envvar='OK_ZAPPR_PATH',
               type=click.Path(),
-              help='Path to .zappr.yaml that should be put into repositories. Leave empty to add .zappy.yaml.')
-@click.option('--zappr-upload-type',
-              '-Z',
-              envvar='OK_ZAPPR_UPLOAD_TYPE',
+              help='Path to .zappr.yaml that should be put into repositories.')
+@click.option('--pr-template-path',
+              '-PR',
+              envvar='OK_PR_TEMPLATE_PATH',
+              help='Path to pull request template that should be put into repositories.')
+@click.option('--issue-template-path',
+              '-I',
+              envvar='OK_ISSUE_TEMPLATE_PATH',
+              help='Path to issue template that should be put into repositories.')
+@click.option('--upload-type',
+              '-UT',
+              envvar='OK_UPLOAD_TYPE',
               default='commit',
               type=click.Choice(['commit', 'pr']),
-              help='How to put .zappr.yaml into the repositories: Either via master commit ("commit") or pull request ("pr").')
+              help='How to put files into the repositories: Either via master commit ("commit") or pull request ("pr").')
 @click.option('--version',
               '-V',
               is_flag=True,
@@ -58,7 +66,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
               is_flag=True,
               default=False,
               help='Print affected repositories and do nothing')
-def main(patterns, base_url, token, yes, zappr_path, zappr_upload_type, dry_run):
+def main(patterns, base_url, token, yes, zappr_path, pr_template_path, issue_template_path, upload_type, dry_run):
     """
     oakkeeper my-org/.* --zappr-path ~/default-zappr.yaml
     """
@@ -66,6 +74,19 @@ def main(patterns, base_url, token, yes, zappr_path, zappr_upload_type, dry_run)
     if zappr_path:
         with open(zappr_path, 'r') as zappr_config_file:
             zappr_config = zappr_config_file.read()
+    pr_template = None
+    if pr_template_path:
+        with open(pr_template_path, 'r') as pr_template_file:
+            pr_template = pr_template_file.read()
+    issue_template = None
+    if issue_template_path:
+        with open(issue_template_path, 'r') as issue_template_file:
+            issue_template = issue_template_file.read()
+    files = {
+        '.zappr.yaml': zappr_config,
+        '.github/PULL_REQUEST_TEMPLATE.md': pr_template,
+        '.github/ISSUE_TEMPLATE.md': issue_template
+    }
     repos = []
     with Action('Collecting repositories...') as action:
         for repo_data in get_repositories(base_url, token, patterns):
@@ -80,7 +101,7 @@ def main(patterns, base_url, token, yes, zappr_path, zappr_upload_type, dry_run)
                 protect = click.confirm('Protect {repo}?'.format(repo=repo_data['full_name']))
             if protect:
                 protect_repo(base_url=base_url, token=token, repo_data=repo_data,
-                             zappr_config=zappr_config, zappr_upload_type=zappr_upload_type)
+                             files=files, upload_type=upload_type)
 
 
 def get_repositories(base_url, token, patterns):
@@ -96,15 +117,16 @@ def get_repositories(base_url, token, patterns):
         page += 1
 
 
-def protect_repo(base_url, token, repo_data, zappr_config, zappr_upload_type):
+def protect_repo(base_url, token, repo_data, files, upload_type):
     repo_name = repo_data['full_name']
     default_branch = repo_data['default_branch']
     try:
-        if zappr_config is not None:
-            with Action('Uploading .zappr.yaml for {repo}'.format(repo=repo_name)):
-                api.upload_file(base_url=base_url, token=token, repo=repo_name,
-                                default_branch=default_branch, file_content=zappr_config,
-                                upload_type=zappr_upload_type)
+        for file_path, file_content in files:
+            if file_content is not None:
+                with Action('Uploading {file} for {repo}'.format(file=file_path, repo=repo_name)):
+                    api.upload_file(base_url=base_url, token=token, repo=repo_name,
+                                    default_branch=default_branch, file_content=file_content,
+                                    upload_type=upload_type)
         with Action('Protecting branches for {repo}'.format(repo=repo_name)):
             api.ensure_branch_protection(base_url=base_url, token=token, repo=repo_name,
                                          branch=default_branch)

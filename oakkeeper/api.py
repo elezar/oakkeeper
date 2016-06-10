@@ -108,13 +108,13 @@ def create_pr(base_url, token, repo, base, head, title='Add .zappr.yaml', body='
     return None
 
 
-def commit_file(base_url, token, repo, branch_name, file_name, file_content):
-    url = base_url + '/repos/{repo}/contents/{file_name}'.format(repo=repo, file_name=file_name)
+def commit_file(base_url, token, repo, branch_name, file_path, file_content):
+    url = base_url + '/repos/{repo}/contents/{file_path}'.format(repo=repo, file_path=file_path)
     auth = HTTPBasicAuth('token', token)
     read = requests.get(url + '?ref={branch}'.format(branch=branch_name), auth=auth)
     sha = read.json()['sha'] if read.ok else None
     payload = {
-        'message': 'Add .zappr.yaml',
+        'message': 'Add {file_path}'.format(file_path=file_path),
         'content': base64.b64encode(file_content.encode('UTF-8')).decode('ascii'),
         'branch': branch_name
     }
@@ -129,17 +129,17 @@ def commit_file(base_url, token, repo, branch_name, file_name, file_content):
     return r.json()
 
 
-def upload_file(base_url, token, repo, default_branch, file_content, upload_type, file_name='.zappr.yaml',
+def upload_file(base_url, token, repo, default_branch, file_content, upload_type, file_path,
                 branch_name='add-zappr-yaml'):
     if upload_type == 'commit':
-        commit_file(base_url=base_url, token=token, repo=repo, branch_name=default_branch, file_name=file_name,
+        commit_file(base_url=base_url, token=token, repo=repo, branch_name=default_branch, file_path=file_path,
                     file_content=file_content)
     elif upload_type == 'pr':
         commits = get_commits(base_url=base_url, token=token, repo=repo)
         head = commits[0]['sha']
         create_branch(base_url=base_url, token=token, repo=repo, branch_name=branch_name, from_sha=head)
         commit_resp = commit_file(base_url=base_url, token=token, repo=repo, branch_name=branch_name,
-                                  file_name=file_name, file_content=file_content)
+                                  file_path=file_path, file_content=file_content)
         create_pr(base_url=base_url, token=token, repo=repo, base=default_branch, head=commit_resp['commit']['sha'])
     else:
         return None
