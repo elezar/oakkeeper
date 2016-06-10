@@ -31,10 +31,12 @@ Alternatively you can provide the repository patterns as a space-separated list 
 * Github Url: `--base-url` or environment variable `OK_BASE_URL`. For Github Enterprise this is `<github enterprise url>/api/v3`.
 * "Yes to all": `--yes` or environment variable `OK_YES`
 
-You can also directly upload a local `.zappr.yaml` to every repository:
+You can also directly upload a local `.zappr.yaml` or an issue/PR template to every repository:
 
 * Path to `.zappr.yaml`: `--zappr-path` or `OK_ZAPPR_PATH`
-* Upload type: `--zappr-upload-type` or `OK_ZAPPR_UPLOAD_TYPE`. Might be `commit` (commit to default branch) or `pr` (open pull request).
+* Path to `ISSUE_TEMPLATE.md`: `--issue-template-path` or `OK_ISSUE_TEMPLATE_PATH`
+* Path to `PULL_REQUEST_TEMPLATE.md`: `--pr-template-path` or `OK_PULL_REQUEST_TEMPLATE_PATH`
+* Upload type: `--upload-type` or `OK_UPLOAD_TYPE`. Might be `commit` (commit to default branch) or `pr` (open pull request).
 
 ## License
 

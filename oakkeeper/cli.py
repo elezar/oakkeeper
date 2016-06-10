@@ -16,8 +16,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
 @click.command(context_settings=CONTEXT_SETTINGS)
-@click.argument('patterns',
-                nargs=-1)
+@click.argument('patterns')
 @click.option('--base-url',
               '-U',
               envvar='OK_BASE_URL',
@@ -70,23 +69,17 @@ def main(patterns, base_url, token, yes, zappr_path, pr_template_path, issue_tem
     """
     oakkeeper my-org/.* --zappr-path ~/default-zappr.yaml
     """
-    zappr_config = None
+    files = {}
     if zappr_path:
         with open(zappr_path, 'r') as zappr_config_file:
-            zappr_config = zappr_config_file.read()
-    pr_template = None
+            files['.zappr.yaml'] = zappr_config_file.read()
     if pr_template_path:
         with open(pr_template_path, 'r') as pr_template_file:
-            pr_template = pr_template_file.read()
-    issue_template = None
+            files['.github/PULL_REQUEST_TEMPLATE.md'] = pr_template_file.read()
     if issue_template_path:
         with open(issue_template_path, 'r') as issue_template_file:
-            issue_template = issue_template_file.read()
-    files = {
-        '.zappr.yaml': zappr_config,
-        '.github/PULL_REQUEST_TEMPLATE.md': pr_template,
-        '.github/ISSUE_TEMPLATE.md': issue_template
-    }
+            files['.github/ISSUE_TEMPLATE.md'] = issue_template_file.read()
+
     repos = []
     with Action('Collecting repositories...') as action:
         for repo_data in get_repositories(base_url, token, patterns):
@@ -121,12 +114,16 @@ def protect_repo(base_url, token, repo_data, files, upload_type):
     repo_name = repo_data['full_name']
     default_branch = repo_data['default_branch']
     try:
-        for file_path, file_content in files:
-            if file_content is not None:
-                with Action('Uploading {file} for {repo}'.format(file=file_path, repo=repo_name)):
-                    api.upload_file(base_url=base_url, token=token, repo=repo_name,
-                                    default_branch=default_branch, file_content=file_content,
-                                    upload_type=upload_type)
+        if len(files) > 0:
+            with Action('Uploading files for {repo}'.format(repo=repo_name)):
+                if upload_type == 'commit':
+                    api.commit_files(base_url=base_url, token=token, repo=repo_name, branch_name=default_branch,
+                                     files=files)
+                elif upload_type == 'pr':
+                    pr_title = 'Add ' + ', '.join(list(files.keys()))
+                    branch_name = 'oakkeeper-add-files'
+                    api.submit_pr(base_url=base_url, token=token, repo=repo_name, default_branch=default_branch,
+                                  branch_name=branch_name, title=pr_title, files=files)
         with Action('Protecting branches for {repo}'.format(repo=repo_name)):
             api.ensure_branch_protection(base_url=base_url, token=token, repo=repo_name,
                                          branch=default_branch)
