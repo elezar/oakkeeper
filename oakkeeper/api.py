@@ -85,7 +85,6 @@ def get_commits(base_url, token, repo):
 def create_branch(base_url, token, repo, branch_name, from_sha):
     url = base_url + '/repos/{repo}/git/refs'.format(repo=repo)
     auth = HTTPBasicAuth('token', token)
-    print(branch_name)
     payload = {
         'ref': 'refs/heads/{name}'.format(name=branch_name),
         'sha': from_sha
@@ -112,7 +111,6 @@ def create_pr(base_url, token, repo, base, head, title='Add .zappr.yaml', body='
 def commit_files(base_url, token, repo, branch_name, files):
     result = []
     for file_path, file_content in files.items():
-        print(file_path, file_content)
         commit = commit_file(base_url=base_url, token=token, repo=repo, branch_name=branch_name, file_path=file_path,
                              file_content=file_content)
         result.append({'file': file_path, 'commit': commit})
