@@ -24,6 +24,7 @@ def teardown():
         api.ensure_branch_protection.reset_mock()
         api.get_branch_data.reset_mock()
         api.get_repos_page_count.reset_mock()
+        api.commit_files.reset_mock()
     except:
         pass
 
@@ -75,3 +76,39 @@ def test_happy_case():
     assert 0 == result.exit_code
     api.protect_branch.assert_called_with(GITHUB_API, TOKEN, 'foo/bar', 'release', ['zappr'])
     api.get_branch_data.assert_called_with(GITHUB_API, TOKEN, 'foo/bar', 'release')
+
+
+@with_setup(setup, teardown)
+def test_upload():
+    api.commit_files = MagicMock()
+    runner = CliRunner()
+    TEST_FILES = {
+        '.zappr.yaml': 'approvals\n  minimum: 2\n',
+        '.github/PULL_REQUEST_TEMPLATE.md': '# PULL REQUEST',
+        '.github/ISSUE_TEMPLATE.md': '# ISSUE'
+    }
+    with runner.isolated_filesystem():
+        with open('PR.md', 'w') as f:
+            f.write(TEST_FILES['.github/PULL_REQUEST_TEMPLATE.md'])
+        with open('ISSUE.md', 'w') as f:
+            f.write(TEST_FILES['.github/ISSUE_TEMPLATE.md'])
+        with open('.zappr.yaml', 'w') as f:
+            f.write(TEST_FILES['.zappr.yaml'])
+        result = runner.invoke(main, [
+            'foo/bar',
+            '--base-url', GITHUB_API,
+            '-T', TOKEN,
+            '--upload-type', 'commit',
+            '--pr-template-path', 'PR.md',
+            '--issue-template-path', 'ISSUE.md',
+            '--zappr-path', '.zappr.yaml',
+            '--yes'
+        ], catch_exceptions=False)
+        assert result.exit_code == 0
+        api.commit_files.assert_called_with(
+            base_url=GITHUB_API,
+            token=TOKEN,
+            repo=REPO_DATA['full_name'],
+            branch_name=REPO_DATA['default_branch'],
+            files=TEST_FILES
+        )
