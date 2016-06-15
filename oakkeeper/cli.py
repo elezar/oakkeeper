@@ -16,7 +16,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
 
 @click.command(context_settings=CONTEXT_SETTINGS)
-@click.argument('patterns')
+@click.argument('patterns', nargs=-1)
 @click.option('--base-url',
               '-U',
               envvar='OK_BASE_URL',
