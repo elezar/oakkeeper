@@ -159,3 +159,27 @@ def test_push_to_protected_branch():
             assert 0 == result.exit_code
             assert 'EXCEPTION' not in result.output
             assert 'Unable to commit files to foo/bar: status checks failed' in result.output
+
+
+@with_setup(setup, teardown)
+def test_create_pr_branch_exists():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with patch.object(api, 'submit_pr') as submit_pr, patch.object(api, 'ensure_branch_protection'):
+            submit_pr.side_effect = api.BranchAlreadyExistsError('oakkeeper-add-files')
+
+            with open('.zappr.yaml', 'w') as f:
+                f.write('''approvals:\n    minimum: 2\n''')
+
+            result = runner.invoke(main, [
+                '--base-url', GITHUB_API,
+                '--token', TOKEN,
+                '--zappr-path', '.zappr.yaml',
+                '--upload-type', 'pr',
+                '--yes',
+                '^foo/bar$'
+            ])
+
+            assert 0 == result.exit_code
+            assert 'EXCEPTION' not in result.output
+            assert "Unable to commit files to foo/bar: branch 'oakkeeper-add-files' already exists" in result.output
