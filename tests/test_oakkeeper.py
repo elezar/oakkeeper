@@ -1,10 +1,12 @@
+import importlib
 from nose.tools import with_setup
 from unittest.mock import MagicMock
 from unittest.mock import patch
 from click.testing import CliRunner
 from oakkeeper.cli import main
 from oakkeeper import cli
-import oakkeeper.api as api
+from oakkeeper import api
+
 
 GITHUB_API = 'https://github.api'
 TOKEN = '123'
@@ -15,20 +17,13 @@ REPO_DATA = {
 
 
 def setup():
-    api.get_repos_page_count = MagicMock(return_value=1)
+    api.get_repos_page_count = MagicMock(return_value=0)
     api.get_repos = MagicMock(return_value=[REPO_DATA])
 
 
+# FIXME: huge hack to not break old tests
 def teardown():
-    try:
-        api.get_repos.reset_mock()
-        api.protect_branch.reset_mock()
-        api.ensure_branch_protection.reset_mock()
-        api.get_branch_data.reset_mock()
-        api.get_repos_page_count.reset_mock()
-        api.commit_files.reset_mock()
-    except:
-        pass
+    importlib.reload(api)
 
 
 @with_setup(setup, teardown)
@@ -141,3 +136,26 @@ def test_patterns_argument():
                                              repo_data=matching,
                                              files=dict(),
                                              upload_type='commit')
+
+
+@with_setup(setup, teardown)
+def test_push_to_protected_branch():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with patch.object(api, 'commit_files') as commit_files, patch.object(api, 'ensure_branch_protection'):
+            commit_files.side_effect = api.StatusCheckError()
+
+            with open('.zappr.yaml', 'w') as f:
+                f.write('''approvals:\n    minimum: 2\n''')
+
+            result = runner.invoke(main, [
+                '--base-url', GITHUB_API,
+                '--token', TOKEN,
+                '--zappr-path', '.zappr.yaml',
+                '--yes',
+                '^foo/bar$'
+            ])
+
+            assert 0 == result.exit_code
+            assert 'EXCEPTION' not in result.output
+            assert 'Unable to commit files to foo/bar: status checks failed' in result.output

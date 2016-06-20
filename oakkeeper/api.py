@@ -7,6 +7,13 @@ from requests.auth import HTTPBasicAuth
 PAGE_REGEX = re.compile(r'page=([0-9]+)')
 
 
+# TODO: change base class
+class StatusCheckError(BaseException):
+    """
+    Raised when commit doesn't pass required status checks
+    """
+
+
 def get_repos_page_count(base_url, token):
     url = base_url + '/user/repos?visibility=public'
     auth = HTTPBasicAuth('token', token)
@@ -134,6 +141,8 @@ def commit_file(base_url, token, repo, branch_name, file_path, file_content):
         auth=auth,
         data=json.dumps(payload)
     )
+    if r.status_code == 409 and 'Required status check' in r.text:
+        raise StatusCheckError()
     r.raise_for_status()
     return r.json()
 
