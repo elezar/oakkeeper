@@ -7,6 +7,21 @@ from requests.auth import HTTPBasicAuth
 PAGE_REGEX = re.compile(r'page=([0-9]+)')
 
 
+class ApiError(BaseException):
+    pass
+
+
+class StatusCheckError(ApiError):
+    """
+    Raised when commit doesn't pass required status checks
+    """
+
+
+class BranchAlreadyExistsError(ApiError):
+    def __init__(self, branch_name):
+        super().__init__("branch '{}' already exists".format(branch_name))
+
+
 def get_repos_page_count(base_url, token):
     url = base_url + '/user/repos?visibility=public'
     auth = HTTPBasicAuth('token', token)
@@ -90,6 +105,8 @@ def create_branch(base_url, token, repo, branch_name, from_sha):
         'sha': from_sha
     }
     r = requests.post(url, data=json.dumps(payload), auth=auth)
+    if r.status_code == 422 and 'Reference already exists' in r.text:
+        raise BranchAlreadyExistsError(branch_name)
     r.raise_for_status()
     return r.json()
 
@@ -134,6 +151,8 @@ def commit_file(base_url, token, repo, branch_name, file_path, file_content):
         auth=auth,
         data=json.dumps(payload)
     )
+    if r.status_code == 409 and 'Required status check' in r.text:
+        raise StatusCheckError()
     r.raise_for_status()
     return r.json()
 

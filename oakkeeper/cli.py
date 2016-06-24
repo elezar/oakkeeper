@@ -115,15 +115,22 @@ def protect_repo(base_url, token, repo_data, files, upload_type):
     default_branch = repo_data['default_branch']
     try:
         if len(files) > 0:
-            with Action('Uploading files for {repo}'.format(repo=repo_name)):
+            with Action('Uploading files for {repo}'.format(repo=repo_name)) as action:
                 if upload_type == 'commit':
-                    api.commit_files(base_url=base_url, token=token, repo=repo_name, branch_name=default_branch,
-                                     files=files)
+                    try:
+                        api.commit_files(base_url=base_url, token=token, repo=repo_name, branch_name=default_branch,
+                                         files=files)
+                    except api.StatusCheckError:
+                        action.warning('\nUnable to commit files to {}: status checks failed'.format(repo_name))
                 elif upload_type == 'pr':
                     pr_title = 'Add ' + ', '.join(list(files.keys()))
                     branch_name = 'oakkeeper-add-files'
-                    api.submit_pr(base_url=base_url, token=token, repo=repo_name, default_branch=default_branch,
-                                  branch_name=branch_name, title=pr_title, files=files)
+                    try:
+                        api.submit_pr(base_url=base_url, token=token, repo=repo_name, default_branch=default_branch,
+                                      branch_name=branch_name, title=pr_title, files=files)
+                    except api.BranchAlreadyExistsError:
+                        action.warning('''\nUnable to commit files to {}: branch '{}' already exists'''.format(
+                            repo_name, branch_name))
         with Action('Protecting branches for {repo}'.format(repo=repo_name)):
             api.ensure_branch_protection(base_url=base_url, token=token, repo=repo_name,
                                          branch=default_branch)
