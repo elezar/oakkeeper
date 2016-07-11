@@ -12,6 +12,7 @@ It makes sure that for any repository:
 1. The default branch is protected
 2. Enforcement level is set to `everyone` (includes admins)
 3. [Zappr](https://github.com/zalando/zappr) is a required status check
+4. Zappr checks of your choice are enabled
 
 ## Installation
 
@@ -19,7 +20,7 @@ It makes sure that for any repository:
 
 ## Usage
 
-If you just type `oakkeeper`, it will prompt for the Github API Base URL (defaults to Github.com) and the access token to use. **Be aware that the token needs `repo` scope!** Afterwards it will read all repositories you have access to and asks to enable branch protection.
+If you just type `oakkeeper`, it will prompt for the Github API Base URL (defaults to Github.com), the Zappr Base URL (defaults to Zappr Opensource) and the access token to use. **Be aware that the token needs `repo` scope at least, for Zappr check management also `admin:repo_hook`.** Afterwards it will read all repositories you have access to and asks to enable branch protection.
 
 Alternatively you can provide the repository patterns as a space-separated list like so:
 
@@ -29,6 +30,7 @@ Alternatively you can provide the repository patterns as a space-separated list 
 
 * Access token: `--token` or environment variable `OK_TOKEN`. Needs `repo` scope.
 * Github Url: `--base-url` or environment variable `OK_BASE_URL`. For Github Enterprise this is `<github enterprise url>/api/v3`.
+* Zappr Url: `--zappr-base-url` or environment variable `OK_ZAPPR_BASE_URL`. For Zappr Enterprise use URL of your ZE installation.
 * "Yes to all": `--yes` or environment variable `OK_YES`
 
 You can also directly upload a local `.zappr.yaml` or an issue/PR template to every repository:
@@ -37,6 +39,11 @@ You can also directly upload a local `.zappr.yaml` or an issue/PR template to ev
 * Path to `ISSUE_TEMPLATE.md`: `--issue-template-path` or `OK_ISSUE_TEMPLATE_PATH`
 * Path to `PULL_REQUEST_TEMPLATE.md`: `--pr-template-path` or `OK_PULL_REQUEST_TEMPLATE_PATH`
 * Upload type: `--upload-type` or `OK_UPLOAD_TYPE`. Might be `commit` (commit to default branch) or `pr` (open pull request).
+
+To enable/disable checks in Zappr use these:
+
+* `--enable`: Enables a Zappr check (currently `approval`, `commitmessage` or `autobranch`) for a repository
+* `--disable`: Disables a Zappr check for a repository
 
 ## License
 
