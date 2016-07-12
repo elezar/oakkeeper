@@ -14,7 +14,7 @@ def print_version(ctx, param, value):
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
-ZAPPR_CHECKS = ['approval', 'commitmessage', 'autobranch']
+ZAPPR_CHECKS = ['approval', 'commitmessage', 'autobranch', 'specification']
 
 
 @click.command(context_settings=CONTEXT_SETTINGS)
