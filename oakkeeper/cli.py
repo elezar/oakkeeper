@@ -37,11 +37,13 @@ ZAPPR_CHECKS = ['approval', 'commitmessage', 'autobranch', 'specification']
               default='https://zappr.opensource.zalan.do',
               help='URL to Zappr, defaults to Zappr Opensource.')
 @click.option('--enable',
+              '-E',
               envvar='OK_ZAPPR_ENABLE_CHECKS',
               type=click.Choice(ZAPPR_CHECKS),
               multiple=True,
               help='Checks you want to enable for a repository.')
 @click.option('--disable',
+              '-D',
               envvar='OK_ZAPPR_DISABLE_CHECKS',
               type=click.Choice(ZAPPR_CHECKS),
               multiple=True,
