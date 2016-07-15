@@ -5,6 +5,7 @@ python:
 install:
   - pip install nose flake8 coveralls click clickclick requests
 script:
+  - flake8
   - nosetests --with-coverage --cover-package=oakkeeper
 after_success:
   - coveralls
