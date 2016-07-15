@@ -72,7 +72,8 @@ ZAPPR_CHECKS = ['approval', 'commitmessage', 'autobranch', 'specification']
               envvar='OK_TOKEN',
               prompt='Your personal access token',
               hide_input=True,
-              help='Your personal access token to use, must have "repo" scope. In case you want to manage Zappr checks it also needs "admin:repo_hook".')
+              help='Your personal access token to use, must have "repo" scope. ' +
+                   'In case you want to manage Zappr checks it also needs "admin:repo_hook".')
 @click.option('--version',
               '-V',
               is_flag=True,
