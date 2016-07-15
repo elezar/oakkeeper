@@ -1,16 +1,15 @@
 import importlib
 from nose.tools import with_setup
-from unittest.mock import MagicMock
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from click.testing import CliRunner
 from oakkeeper.cli import main
-from oakkeeper import cli
-from oakkeeper import api
-
+from oakkeeper import cli, api, zappr
 
 GITHUB_API = 'https://github.api'
+ZAPPR_API = 'https://zappr.api'
 TOKEN = '123'
 REPO_DATA = {
+    'id': 1,
     'default_branch': 'release',
     'full_name': 'foo/bar'
 }
@@ -183,3 +182,51 @@ def test_create_pr_branch_exists():
             assert 0 == result.exit_code
             assert 'EXCEPTION' not in result.output
             assert "Unable to commit files to foo/bar: branch 'oakkeeper-add-files' already exists" in result.output
+
+
+@with_setup(setup, teardown)
+@patch('oakkeeper.zappr.enable_check')
+@patch('oakkeeper.zappr.disable_check')
+@patch('oakkeeper.api.ensure_branch_protection')
+def test_apply_checks(ensure_branch_protection, disable_check, enable_check):
+    runner = CliRunner()
+    result = runner.invoke(main, [
+        '--base-url', GITHUB_API,
+        '--zappr-base-url', ZAPPR_API,
+        '--token', TOKEN,
+        '--enable', 'approval',
+        '--disable', 'commitmessage',
+        '--yes',
+        'foo/bar'
+    ])
+    assert result.exit_code == 0
+    assert 'EXCEPTION' not in result.output
+    enable_check.assert_called_once_with(base_url=ZAPPR_API, repository_id=1, check='approval', token=TOKEN)
+    disable_check.assert_called_once_with(base_url=ZAPPR_API, repository_id=1, check='commitmessage', token=TOKEN)
+    assert ensure_branch_protection.called
+
+
+@with_setup(setup, teardown)
+@patch('oakkeeper.zappr.enable_check')
+@patch('oakkeeper.zappr.disable_check')
+@patch('oakkeeper.api.ensure_branch_protection')
+def test_check_error_message(ensure_branch_protection, disable_check, enable_check):
+    enable_check.side_effect = zappr.ZapprException({'title': 'Error', 'detail': 'Already exists'})
+    disable_check.side_effect = zappr.ZapprException({'title': 'Error', 'detail': 'Not gonna happen'})
+    runner = CliRunner()
+    result = runner.invoke(main, [
+        '--base-url', GITHUB_API,
+        '--zappr-base-url', ZAPPR_API,
+        '--token', TOKEN,
+        '--enable', 'approval',
+        '--disable', 'commitmessage',
+        '--yes',
+        'foo/bar'
+    ])
+    assert result.exit_code == 0
+    assert 'EXCEPTION' not in result.output
+    enable_check.assert_called_once_with(base_url=ZAPPR_API, repository_id=1, check='approval', token=TOKEN)
+    disable_check.assert_called_once_with(base_url=ZAPPR_API, repository_id=1, check='commitmessage', token=TOKEN)
+    assert ensure_branch_protection.called
+    assert "Could not enable approval: Error: Already exists" in result.output
+    assert "Could not disable commitmessage: Error: Not gonna happen" in result.output

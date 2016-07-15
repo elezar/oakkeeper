@@ -2,6 +2,7 @@ import re
 import click
 import oakkeeper
 import oakkeeper.api as api
+import oakkeeper.zappr as zappr_api
 from clickclick import Action, info
 
 
@@ -13,6 +14,7 @@ def print_version(ctx, param, value):
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+ZAPPR_CHECKS = ['approval', 'commitmessage', 'autobranch', 'specification']
 
 
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -23,18 +25,29 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
               prompt='Github API Base URL',
               default='https://api.github.com',
               help='The Github API Base URL. For GHE use <GHE URL>/api/v3.')
-@click.option('--token',
-              '-T',
-              envvar='OK_TOKEN',
-              prompt='Your personal access token',
-              hide_input=True,
-              help='Your personal access token to use, must have "repo" scope.')
 @click.option('--yes',
               '-Y',
               envvar='OK_YES',
               is_flag=True,
               default=False,
               help='Do not prompt for every repository, protect branches everywhere.')
+@click.option('--zappr-base-url',
+              envvar='OK_ZAPPR_BASE_URL',
+              prompt='Zappr Base URL',
+              default='https://zappr.opensource.zalan.do',
+              help='URL to Zappr, defaults to Zappr Opensource.')
+@click.option('--enable',
+              '-E',
+              envvar='OK_ZAPPR_ENABLE_CHECKS',
+              type=click.Choice(ZAPPR_CHECKS),
+              multiple=True,
+              help='Checks you want to enable for a repository.')
+@click.option('--disable',
+              '-D',
+              envvar='OK_ZAPPR_DISABLE_CHECKS',
+              type=click.Choice(ZAPPR_CHECKS),
+              multiple=True,
+              help='Checks you want to disable for a repository.')
 @click.option('--zappr-path',
               '-Z',
               envvar='OK_ZAPPR_PATH',
@@ -54,6 +67,12 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
               default='commit',
               type=click.Choice(['commit', 'pr']),
               help='How to put files into the repositories: Either via master commit ("commit") or pull request ("pr").')
+@click.option('--token',
+              '-T',
+              envvar='OK_TOKEN',
+              prompt='Your personal access token',
+              hide_input=True,
+              help='Your personal access token to use, must have "repo" scope. In case you want to manage Zappr checks it also needs "admin:repo_hook".')
 @click.option('--version',
               '-V',
               is_flag=True,
@@ -65,7 +84,8 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
               is_flag=True,
               default=False,
               help='Print affected repositories and do nothing')
-def main(patterns, base_url, token, yes, zappr_path, pr_template_path, issue_template_path, upload_type, dry_run):
+def main(patterns, base_url, yes, zappr_base_url, enable, disable, zappr_path, pr_template_path,
+         issue_template_path, upload_type, token, dry_run):
     """
     oakkeeper my-org/.* --zappr-path ~/default-zappr.yaml
     """
@@ -95,6 +115,9 @@ def main(patterns, base_url, token, yes, zappr_path, pr_template_path, issue_tem
             if protect:
                 protect_repo(base_url=base_url, token=token, repo_data=repo_data,
                              files=files, upload_type=upload_type)
+                if len(enable) > 0 or len(disable) > 0:
+                    apply_zappr_checks(zappr_base_url=zappr_base_url, token=token, repo_data=repo_data,
+                                       enable_checks=enable, disable_checks=disable)
 
 
 def get_repositories(base_url, token, patterns):
@@ -108,6 +131,26 @@ def get_repositories(base_url, token, patterns):
                     yield repo_data
                     break
         page += 1
+
+
+def apply_zappr_checks(zappr_base_url, repo_data, enable_checks, disable_checks, token):
+    repo_id = repo_data['id']
+    repo_name = repo_data['full_name']
+    try:
+        for check in enable_checks:
+            with Action('Enabling check {check} for {repo}'.format(check=check, repo=repo_name)) as action:
+                try:
+                    zappr_api.enable_check(base_url=zappr_base_url, repository_id=repo_id, check=check, token=token)
+                except zappr_api.ZapprException as e:
+                    action.warning('\nCould not enable {check}: {error}'.format(check=check, error=e))
+        for check in disable_checks:
+            with Action('Disabling check {check} for {repo}'.format(check=check, repo=repo_name)) as action:
+                try:
+                    zappr_api.disable_check(base_url=zappr_base_url, repository_id=repo_id, check=check, token=token)
+                except zappr_api.ZapprException as e:
+                    action.warning('\nCould not disable {check}: {error}'.format(check=check, error=e))
+    except:
+        pass
 
 
 def protect_repo(base_url, token, repo_data, files, upload_type):
