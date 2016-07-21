@@ -60,20 +60,19 @@ def get_branch_data(base_url, token, repo, branch):
     return r.json()
 
 
-def protect_branch(base_url, token, repo, branch, required_contexts):
+def protect_branch(base_url, token, repo, branch, required_contexts, strict=False, include_admins=True):
     protection_payload = {
-        'protection': {
-            'enabled': True,
-            'required_status_checks': {
-                'enforcement_level': 'everyone',
-                'contexts': required_contexts
-            }
-        }
+        'required_status_checks': {
+            'include_admins': include_admins,
+            'strict': strict,
+            'contexts': required_contexts
+        },
+        'restrictions': None
     }
-    url = base_url + '/repos/{repo}/branches/{branch}'.format(repo=repo, branch=branch)
+    url = base_url + '/repos/{repo}/branches/{branch}/protection'.format(repo=repo, branch=branch)
     headers = {'Accept': 'application/vnd.github.loki-preview+json'}
     auth = HTTPBasicAuth('token', token)
-    r = requests.patch(
+    r = requests.put(
         url,
         headers=headers,
         auth=auth,
