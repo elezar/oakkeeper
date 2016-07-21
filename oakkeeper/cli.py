@@ -13,6 +13,7 @@ def print_version(ctx, param, value):
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+DEFAULT_GITHUB = 'https://api.github.com'
 
 
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -21,7 +22,7 @@ CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
               '-U',
               envvar='OK_BASE_URL',
               prompt='Github API Base URL',
-              default='https://api.github.com',
+              default=DEFAULT_GITHUB,
               help='The Github API Base URL. For GHE use <GHE URL>/api/v3.')
 @click.option('--token',
               '-T',
@@ -94,7 +95,7 @@ def main(patterns, base_url, token, yes, zappr_path, pr_template_path, issue_tem
                 protect = click.confirm('Protect {repo}?'.format(repo=repo_data['full_name']))
             if protect:
                 protect_repo(base_url=base_url, token=token, repo_data=repo_data,
-                             files=files, upload_type=upload_type)
+                             files=files, upload_type=upload_type, use_preview_apis=base_url == DEFAULT_GITHUB)
 
 
 def get_repositories(base_url, token, patterns):
@@ -110,7 +111,7 @@ def get_repositories(base_url, token, patterns):
         page += 1
 
 
-def protect_repo(base_url, token, repo_data, files, upload_type):
+def protect_repo(base_url, token, repo_data, files, upload_type, use_preview_apis):
     repo_name = repo_data['full_name']
     default_branch = repo_data['default_branch']
     try:
@@ -133,7 +134,7 @@ def protect_repo(base_url, token, repo_data, files, upload_type):
                             repo_name, branch_name))
         with Action('Protecting branches for {repo}'.format(repo=repo_name)):
             api.ensure_branch_protection(base_url=base_url, token=token, repo=repo_name,
-                                         branch=default_branch)
+                                         branch=default_branch, use_preview_apis=use_preview_apis)
     except:
         # handled already by Action
         pass

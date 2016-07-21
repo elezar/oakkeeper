@@ -60,32 +60,50 @@ def get_branch_data(base_url, token, repo, branch):
     return r.json()
 
 
-def protect_branch(base_url, token, repo, branch, required_contexts, strict=False, include_admins=True):
-    protection_payload = {
-        'required_status_checks': {
-            'include_admins': include_admins,
-            'strict': strict,
-            'contexts': required_contexts
-        },
-        'restrictions': None
-    }
-    url = base_url + '/repos/{repo}/branches/{branch}/protection'.format(repo=repo, branch=branch)
-    headers = {'Accept': 'application/vnd.github.loki-preview+json'}
+def protect_branch(base_url, token, repo, branch, required_contexts, use_preview_apis=False):
     auth = HTTPBasicAuth('token', token)
-    r = requests.put(
-        url,
-        headers=headers,
-        auth=auth,
-        data=json.dumps(protection_payload))
-    r.raise_for_status()
+    headers = {'Accept': 'application/vnd.github.loki-preview+json'}
+    if use_preview_apis:
+        url = base_url + '/repos/{repo}/branches/{branch}/protection'.format(repo=repo, branch=branch)
+        protection_payload = {
+            'required_status_checks': {
+                'include_admins': True,
+                'strict': False,
+                'contexts': required_contexts
+            },
+            'restrictions': None
+        }
+        r = requests.put(
+            url,
+            headers=headers,
+            auth=auth,
+            data=json.dumps(protection_payload))
+        r.raise_for_status()
+    else:
+        url = base_url + '/repos/{repo}/branches/{branch}'.format(repo=repo, branch=branch)
+        protection_payload = {
+            'protection': {
+                'enabled': True,
+                'required_status_checks': {
+                    'enforcement_level': 'everyone',
+                    'contexts': required_contexts
+                }
+            }
+        }
+        r = requests.patch(
+            url,
+            headers=headers,
+            auth=auth,
+            data=json.dumps(protection_payload))
+        r.raise_for_status()
 
 
-def ensure_branch_protection(base_url, token, repo, branch='master'):
+def ensure_branch_protection(base_url, token, repo, branch='master', use_preview_apis=False):
     branch_data = get_branch_data(base_url, token, repo, branch)
     contexts = branch_data['protection']['required_status_checks']['contexts']
     if 'zappr' not in contexts:
         contexts.append('zappr')
-        protect_branch(base_url, token, repo, branch, contexts)
+        protect_branch(base_url, token, repo, branch, contexts, use_preview_apis)
 
 
 def get_commits(base_url, token, repo):

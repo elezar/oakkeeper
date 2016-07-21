@@ -71,7 +71,7 @@ def test_happy_case():
         '--yes'
     ])
     assert 0 == result.exit_code
-    api.protect_branch.assert_called_with(GITHUB_API, TOKEN, 'foo/bar', 'release', ['zappr'])
+    api.protect_branch.assert_called_with(GITHUB_API, TOKEN, 'foo/bar', 'release', ['zappr'], False)
     api.get_branch_data.assert_called_with(GITHUB_API, TOKEN, 'foo/bar', 'release')
 
 
@@ -135,7 +135,8 @@ def test_patterns_argument():
                                              token=TOKEN,
                                              repo_data=matching,
                                              files=dict(),
-                                             upload_type='commit')
+                                             upload_type='commit',
+                                             use_preview_apis=False)
 
 
 @with_setup(setup, teardown)
