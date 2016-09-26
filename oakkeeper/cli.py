@@ -14,7 +14,7 @@ def print_version(ctx, param, value):
 
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
-ZAPPR_CHECKS = ['approval', 'commitmessage', 'autobranch', 'specification']
+ZAPPR_CHECKS = ['approval', 'commitmessage', 'autobranch', 'specification', 'pullrequestlabels']
 
 
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -30,7 +30,7 @@ ZAPPR_CHECKS = ['approval', 'commitmessage', 'autobranch', 'specification']
               envvar='OK_YES',
               is_flag=True,
               default=False,
-              help='Do not prompt for every repository, protect branches everywhere.')
+              help='Do not prompt for every repository.')
 @click.option('--zappr-base-url',
               envvar='OK_ZAPPR_BASE_URL',
               prompt='Zappr Base URL',
@@ -66,14 +66,16 @@ ZAPPR_CHECKS = ['approval', 'commitmessage', 'autobranch', 'specification']
               envvar='OK_UPLOAD_TYPE',
               default='commit',
               type=click.Choice(['commit', 'pr']),
-              help='How to put files into the repositories: Either via master commit ("commit") or pull request ("pr").')
+              help='How to put files into the repositories: Either via master commit ("commit") or '
+                   'pull request ("pr").')
 @click.option('--token',
               '-T',
               envvar='OK_TOKEN',
               prompt='Your personal access token',
               hide_input=True,
               help='Your personal access token to use, must have "repo" scope. ' +
-                   'In case you want to manage Zappr checks it also needs "admin:repo_hook".')
+                   'In case you want to manage Zappr checks it also needs "admin:repo_hook" and you must have admin '
+                   'access to the repository.')
 @click.option('--version',
               '-V',
               is_flag=True,
@@ -110,12 +112,12 @@ def main(patterns, base_url, yes, zappr_base_url, enable, disable, zappr_path, p
         if dry_run:
             info(repo_data['full_name'])
         else:
-            protect = yes
+            do_update = yes
             if not yes:
-                protect = click.confirm('Protect {repo}?'.format(repo=repo_data['full_name']))
-            if protect:
-                protect_repo(base_url=base_url, token=token, repo_data=repo_data,
-                             files=files, upload_type=upload_type)
+                do_update = click.confirm('Update {repo}?'.format(repo=repo_data['full_name']))
+            if do_update:
+                update_repo(base_url=base_url, token=token, repo_data=repo_data,
+                            files=files, upload_type=upload_type)
                 if len(enable) > 0 or len(disable) > 0:
                     apply_zappr_checks(zappr_base_url=zappr_base_url, token=token, repo_data=repo_data,
                                        enable_checks=enable, disable_checks=disable)
@@ -154,7 +156,7 @@ def apply_zappr_checks(zappr_base_url, repo_data, enable_checks, disable_checks,
         pass
 
 
-def protect_repo(base_url, token, repo_data, files, upload_type):
+def update_repo(base_url, token, repo_data, files, upload_type):
     repo_name = repo_data['full_name']
     default_branch = repo_data['default_branch']
     try:
@@ -175,9 +177,6 @@ def protect_repo(base_url, token, repo_data, files, upload_type):
                     except api.BranchAlreadyExistsError:
                         action.warning('''\nUnable to commit files to {}: branch '{}' already exists'''.format(
                             repo_name, branch_name))
-        with Action('Protecting branches for {repo}'.format(repo=repo_name)):
-            api.ensure_branch_protection(base_url=base_url, token=token, repo=repo_name,
-                                         branch=default_branch)
     except:
         # handled already by Action
         pass
