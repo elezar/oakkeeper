@@ -82,10 +82,10 @@ def test_patterns_argument():
 
         assert 0 == result.exit_code
         update_repo.assert_called_once_with(base_url=GITHUB_API,
-                                             token=TOKEN,
-                                             repo_data=matching,
-                                             files=dict(),
-                                             upload_type='commit')
+                                            token=TOKEN,
+                                            repo_data=matching,
+                                            files=dict(),
+                                            upload_type='commit')
 
 
 @with_setup(setup, teardown)
