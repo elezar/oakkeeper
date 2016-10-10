@@ -26,55 +26,6 @@ def teardown():
 
 
 @with_setup(setup, teardown)
-def test_nothing_to_do():
-    branch_data = {
-        'protection': {
-            'required_status_checks': {
-                'contexts': ['zappr']
-            }
-        }
-    }
-    api.get_branch_data = MagicMock(return_value=branch_data)
-    api.protect_branch = MagicMock()
-    runner = CliRunner()
-    result = runner.invoke(main, [
-        'foo/bar',
-        '--base-url',
-        GITHUB_API,
-        '--token',
-        TOKEN
-    ])
-    assert 0 == result.exit_code
-    api.protect_branch.assert_not_called()
-
-
-@with_setup(setup, teardown)
-def test_happy_case():
-    # ['protection']['required_status_checks']['contexts']
-    branch_data = {
-        'protection': {
-            'required_status_checks': {
-                'contexts': []
-            }
-        }
-    }
-    api.get_branch_data = MagicMock(return_value=branch_data)
-    api.protect_branch = MagicMock(return_value=None)
-    runner = CliRunner()
-    result = runner.invoke(main, [
-        'foo/bar',
-        '--base-url',
-        GITHUB_API,
-        '--token',
-        TOKEN,
-        '--yes'
-    ])
-    assert 0 == result.exit_code
-    api.protect_branch.assert_called_with(GITHUB_API, TOKEN, 'foo/bar', 'release', ['zappr'])
-    api.get_branch_data.assert_called_with(GITHUB_API, TOKEN, 'foo/bar', 'release')
-
-
-@with_setup(setup, teardown)
 def test_upload():
     api.commit_files = MagicMock()
     runner = CliRunner()
@@ -113,7 +64,7 @@ def test_upload():
 def test_patterns_argument():
     with patch.object(api, 'get_repos_page_count') as get_repos_page_count, \
             patch.object(api, 'get_repos') as get_repos, \
-            patch.object(cli, 'protect_repo') as protect_repo:
+            patch.object(cli, 'update_repo') as update_repo:
         matching, not_matching = dict(full_name='bar'), dict(full_name='foo')
 
         get_repos_page_count.return_value = 0
@@ -130,18 +81,18 @@ def test_patterns_argument():
         ])
 
         assert 0 == result.exit_code
-        protect_repo.assert_called_once_with(base_url=GITHUB_API,
-                                             token=TOKEN,
-                                             repo_data=matching,
-                                             files=dict(),
-                                             upload_type='commit')
+        update_repo.assert_called_once_with(base_url=GITHUB_API,
+                                            token=TOKEN,
+                                            repo_data=matching,
+                                            files=dict(),
+                                            upload_type='commit')
 
 
 @with_setup(setup, teardown)
 def test_push_to_protected_branch():
     runner = CliRunner()
     with runner.isolated_filesystem():
-        with patch.object(api, 'commit_files') as commit_files, patch.object(api, 'ensure_branch_protection'):
+        with patch.object(api, 'commit_files') as commit_files:
             commit_files.side_effect = api.StatusCheckError()
 
             with open('.zappr.yaml', 'w') as f:
@@ -164,7 +115,7 @@ def test_push_to_protected_branch():
 def test_create_pr_branch_exists():
     runner = CliRunner()
     with runner.isolated_filesystem():
-        with patch.object(api, 'submit_pr') as submit_pr, patch.object(api, 'ensure_branch_protection'):
+        with patch.object(api, 'submit_pr') as submit_pr:
             submit_pr.side_effect = api.BranchAlreadyExistsError('oakkeeper-add-files')
 
             with open('.zappr.yaml', 'w') as f:
@@ -187,8 +138,7 @@ def test_create_pr_branch_exists():
 @with_setup(setup, teardown)
 @patch('oakkeeper.zappr.enable_check')
 @patch('oakkeeper.zappr.disable_check')
-@patch('oakkeeper.api.ensure_branch_protection')
-def test_apply_checks(ensure_branch_protection, disable_check, enable_check):
+def test_apply_checks(disable_check, enable_check):
     runner = CliRunner()
     result = runner.invoke(main, [
         '--base-url', GITHUB_API,
@@ -203,14 +153,12 @@ def test_apply_checks(ensure_branch_protection, disable_check, enable_check):
     assert 'EXCEPTION' not in result.output
     enable_check.assert_called_once_with(base_url=ZAPPR_API, repository_id=1, check='approval', token=TOKEN)
     disable_check.assert_called_once_with(base_url=ZAPPR_API, repository_id=1, check='commitmessage', token=TOKEN)
-    assert ensure_branch_protection.called
 
 
 @with_setup(setup, teardown)
 @patch('oakkeeper.zappr.enable_check')
 @patch('oakkeeper.zappr.disable_check')
-@patch('oakkeeper.api.ensure_branch_protection')
-def test_check_error_message(ensure_branch_protection, disable_check, enable_check):
+def test_check_error_message(disable_check, enable_check):
     enable_check.side_effect = zappr.ZapprException({'title': 'Error', 'detail': 'Already exists'})
     disable_check.side_effect = zappr.ZapprException({'title': 'Error', 'detail': 'Not gonna happen'})
     runner = CliRunner()
@@ -227,6 +175,5 @@ def test_check_error_message(ensure_branch_protection, disable_check, enable_che
     assert 'EXCEPTION' not in result.output
     enable_check.assert_called_once_with(base_url=ZAPPR_API, repository_id=1, check='approval', token=TOKEN)
     disable_check.assert_called_once_with(base_url=ZAPPR_API, repository_id=1, check='commitmessage', token=TOKEN)
-    assert ensure_branch_protection.called
     assert "Could not enable approval: Error: Already exists" in result.output
     assert "Could not disable commitmessage: Error: Not gonna happen" in result.output
