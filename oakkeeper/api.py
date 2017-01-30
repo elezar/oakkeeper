@@ -161,7 +161,6 @@ def submit_pr(base_url, token, repo, default_branch, title, branch_name, files):
     commits = get_commits(base_url=base_url, token=token, repo=repo)
     head = commits[0]['sha']
     create_branch(base_url=base_url, token=token, repo=repo, branch_name=branch_name, from_sha=head)
-    commits = commit_files(base_url=base_url, token=token, repo=repo, files=files, branch_name=branch_name)
-    last_commit = commits[-1]
+    commit_files(base_url=base_url, token=token, repo=repo, files=files, branch_name=branch_name)
     create_pr(base_url=base_url, token=token, repo=repo, title=title, base=default_branch,
               head=branch_name, body='Apply Zappr specifications using Oakkeeper')
