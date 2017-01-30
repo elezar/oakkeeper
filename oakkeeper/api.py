@@ -118,7 +118,7 @@ def create_pr(base_url, token, repo, base, head, title='Add .zappr.yaml', body='
         'title': title,
         'head': head,
         'base': base,
-        'content': body
+        'body': body
     }
     r = requests.post(url, auth=auth, data=json.dumps(payload))
     r.raise_for_status()
@@ -164,4 +164,4 @@ def submit_pr(base_url, token, repo, default_branch, title, branch_name, files):
     commits = commit_files(base_url=base_url, token=token, repo=repo, files=files, branch_name=branch_name)
     last_commit = commits[-1]
     create_pr(base_url=base_url, token=token, repo=repo, title=title, base=default_branch,
-              head=last_commit['commit']['commit']['sha'])
+              head=branch_name, body='Apply Zappr specifications using Oakkeeper')
